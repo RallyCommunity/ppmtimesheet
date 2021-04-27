@@ -3,12 +3,12 @@
 <head>
     <title>PPM Timesheet</title>
     <!--  (c) 2016 CA Technologies.  All Rights Reserved. -->
-    <!--  Build Date: Wed Jan 25 2017 15:11:40 GMT-0700 (MST) -->
+    <!--  Build Date: Tue Apr 27 2021 11:51:28 GMT-0600 (Mountain Daylight Time) -->
     
     <script type="text/javascript">
-        var APP_BUILD_DATE = "Wed Jan 25 2017 15:11:40 GMT-0700 (MST)";
-        var BUILDER = "kcorkan";
-        var CHECKSUM = 2752129514;
+        var APP_BUILD_DATE = "Tue Apr 27 2021 11:51:28 GMT-0600 (Mountain Daylight Time)";
+        var BUILDER = "kc683795";
+        var CHECKSUM = 2884512340;
     </script>
     
     <script type="text/javascript" src="/apps/x/sdk.js"></script>
@@ -211,23 +211,22 @@ Ext.define('Rally.apps.ppmtimesheet.PPMTimesheetApp', {
 
     mixins: ['Rally.clientmetrics.ClientMetricsRecordable'],
 
-    appName: 'PPM Timesheet Frame',
+    appName: 'Clarity Timesheet Frame',
 
     config: {
         defaultSettings: {
             ppmHost: null,
-            ppmPort: 443,
-            ppmRelativePathWithParams: null
+            ppmPort: 443
         }
     },
     autoScroll: false,
     timesheetSuffix:  '/pm/integration.html#',
-
+//https://knowledge.broadcom.com/external/article?articleId=206489
     launch: function() {
 
         var server = this.getPPMHost(),
             port = this.getPPMPort();
-        
+
          this.validateConfig(server, port).then({
                 success: this.addFrame,
                 failure: this.showAppMessage,
@@ -235,25 +234,25 @@ Ext.define('Rally.apps.ppmtimesheet.PPMTimesheetApp', {
         });
     },
     addFrame: function(){
-        this.logger.log('addFrame');
+        this.logger.log('addFrame', this.getHeight());
         var server = this.getPPMHost(),
             port = this.getPPMPort(),
-            relativePath = this.getPPMRelativePath(),
-            url = this.buildPPMTimesheetURL(server, port, relativePath);
+            url = this.buildPPMTimesheetURL(server, port),
+            height = this.getHeight() || 600;
 
         try {
 
-            this.add({
-                xtype: 'container',
-                html: '<div class="secondary-message" style="font-family: ProximaNova,Helvetica,Arial;text-align:center;color:#8a8a8a;font-size:10pt;font-style:italic">Login to PPM through Agile Central is recommended only when using a private computer'
-            });
+            // this.add({
+            //     xtype: 'container',
+            //     html: '<div class="secondary-message" style="font-family: ProximaNova,Helvetica,Arial;text-align:center;color:#8a8a8a;font-size:10pt;font-style:italic">Login to Clarity through Rally is recommended only when using a private computer'
+            // });
 
             var iframe = this.add({
                 xtype: 'component',
                 itemId: 'ppmIframe',
                 autoEl: {
                     tag: 'iframe',
-                    style: 'height: 100%; width: 100%; border: none;',
+                    style: 'height: ' + height + 'px; width: 100%; border: none; resize:both',
                     src: url
                 }
             });
@@ -273,7 +272,7 @@ Ext.define('Rally.apps.ppmtimesheet.PPMTimesheetApp', {
         var deferred = Ext.create('Deft.Deferred');
 
         if (!server){
-            deferred.reject("No PPM Server and Port is configured.  Please work with an administrator to configure your PPM https server.");
+            deferred.reject("No Clarity Server and Port is configured.  Please work with an administrator to configure your Clarity https server.");
         } else {
             //Commented this out due to the chrome issue, as this fails on it.
             //var httpRequest = new XMLHttpRequest(),
@@ -303,29 +302,18 @@ Ext.define('Rally.apps.ppmtimesheet.PPMTimesheetApp', {
 
         return deferred;
     },
-    buildPPMTimesheetURL: function(server, port, relativePath){
-        var url = server.startsWith( "https://" ) ? server : Ext.String.format("https://{0}",server);
+    buildPPMTimesheetURL: function(server, port){
+        var url = Ext.String.format("https://{0}",server);
         if (port){
             url = Ext.String.format("{0}:{1}", url, port);
         }
-        // if relative path is given then either it's SSO environment or default timesheet suffix is not needed
-        if( relativePath ) {
-        	if( !url.endsWith("/") && !relativePath.startsWith("/") ) {
-        		url = url + "/";
-        	} 
-            return url + relativePath;
-        } else {
-            return url + this.timesheetSuffix;        	
-        }
+        return url + this.timesheetSuffix;
     },
     getPPMHost: function(){
         return this.getSetting('ppmHost') || null;
     },
     getPPMPort: function(){
         return this.getSetting('ppmPort') || null;
-    },
-    getPPMRelativePath: function(){
-        return this.getSetting('ppmRelativePathWithParams') || null;
     },
     showAppMessage: function(msg){
         this.removeAll();
@@ -338,46 +326,34 @@ Ext.define('Rally.apps.ppmtimesheet.PPMTimesheetApp', {
 
         return [{
             xtype: 'container',
-            html: '<div class="secondary-message" style="font-family: ProximaNovaBold,Helvetica,Arial;text-align:left;color:#B81B10;font-size:12pt;">NOTE:  The PPM server must be version 15.2 or above.</div>'
+            html: '<div class="secondary-message" style="font-family: ProximaNovaBold,Helvetica,Arial;text-align:left;color:#B81B10;font-size:12pt;">NOTE:  The Clarity server must be version 15.2 or above.</div>'
         },{
             name: 'ppmHost',
             xtype: 'rallytextfield',
             width: 400,
-            labelWidth: 150,
+            labelWidth: 100,
             labelAlign: 'right',
-            fieldLabel: 'PPM Host name',
+            fieldLabel: 'Clarity Host name',
             margin: '10 0 10 0',
             maskRe:  /[a-zA-Z0-9\.\-]/,
             emptyText: 'Please enter a Host name or IP Address...',
-            maxLength: 500
+            maxLength: 255
         },{
             name: 'ppmPort',
             xtype:'rallynumberfield',
             labelAlign: 'right',
             fieldLabel: 'Port (HTTPS)',
-            labelWidth: 150,
+            labelWidth: 100,
             emptyText: 443,
             minValue: 0,
             maxValue: 65535,
             allowBlank: true,
             allowDecimals: false,
             allowExponential: false
-        },{
-            name: 'ppmRelativePathWithParams',
-            xtype: 'rallytextfield',
-            width: 605,
-            labelWidth: 150,
-            labelAlign: 'right',
-            fieldLabel: 'PPM Host Relative Path (for SSO only)',
-            margin: '10 0 10 0',
-            //maskRe:  /[a-zA-Z0-9\.\-]/,
-            //emptyText: 'In SSO environment, enter relative path with any parameters of IdP initiated SSO PPM URL here and enter host address above ...',
-            emptyText: 'In SSO environment, enter relative path with any parameters of IdP initiated SSO PPM URL here...',
-            maxLength: 500
         }];
     }
 });
-  
+            
                Rally.launchApp('Rally.apps.ppmtimesheet.PPMTimesheetApp', {
                    name: 'PPM Timesheet'
                });

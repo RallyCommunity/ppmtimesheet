@@ -6,7 +6,7 @@ Ext.define('Rally.apps.ppmtimesheet.PPMTimesheetApp', {
 
     mixins: ['Rally.clientmetrics.ClientMetricsRecordable'],
 
-    appName: 'PPM Timesheet Frame',
+    appName: 'Clarity Timesheet Frame',
 
     config: {
         defaultSettings: {
@@ -16,7 +16,7 @@ Ext.define('Rally.apps.ppmtimesheet.PPMTimesheetApp', {
     },
     autoScroll: false,
     timesheetSuffix:  '/pm/integration.html#',
-
+//https://knowledge.broadcom.com/external/article?articleId=206489
     launch: function() {
 
         var server = this.getPPMHost(),
@@ -29,24 +29,25 @@ Ext.define('Rally.apps.ppmtimesheet.PPMTimesheetApp', {
         });
     },
     addFrame: function(){
-        this.logger.log('addFrame');
+        this.logger.log('addFrame', this.getHeight());
         var server = this.getPPMHost(),
             port = this.getPPMPort(),
-            url = this.buildPPMTimesheetURL(server, port);
+            url = this.buildPPMTimesheetURL(server, port),
+            height = this.getHeight() || 600;
 
         try {
 
-            this.add({
-                xtype: 'container',
-                html: '<div class="secondary-message" style="font-family: ProximaNova,Helvetica,Arial;text-align:center;color:#8a8a8a;font-size:10pt;font-style:italic">Login to PPM through Agile Central is recommended only when using a private computer'
-            });
+            // this.add({
+            //     xtype: 'container',
+            //     html: '<div class="secondary-message" style="font-family: ProximaNova,Helvetica,Arial;text-align:center;color:#8a8a8a;font-size:10pt;font-style:italic">Login to Clarity through Rally is recommended only when using a private computer'
+            // });
 
             var iframe = this.add({
                 xtype: 'component',
                 itemId: 'ppmIframe',
                 autoEl: {
                     tag: 'iframe',
-                    style: 'height: 100%; width: 100%; border: none;',
+                    style: 'height: ' + height + 'px; width: 100%; border: none; resize:both',
                     src: url
                 }
             });
@@ -66,7 +67,7 @@ Ext.define('Rally.apps.ppmtimesheet.PPMTimesheetApp', {
         var deferred = Ext.create('Deft.Deferred');
 
         if (!server){
-            deferred.reject("No PPM Server and Port is configured.  Please work with an administrator to configure your PPM https server.");
+            deferred.reject("No Clarity Server and Port is configured.  Please work with an administrator to configure your Clarity https server.");
         } else {
             //Commented this out due to the chrome issue, as this fails on it.
             //var httpRequest = new XMLHttpRequest(),
@@ -120,14 +121,14 @@ Ext.define('Rally.apps.ppmtimesheet.PPMTimesheetApp', {
 
         return [{
             xtype: 'container',
-            html: '<div class="secondary-message" style="font-family: ProximaNovaBold,Helvetica,Arial;text-align:left;color:#B81B10;font-size:12pt;">NOTE:  The PPM server must be version 15.2 or above.</div>'
+            html: '<div class="secondary-message" style="font-family: ProximaNovaBold,Helvetica,Arial;text-align:left;color:#B81B10;font-size:12pt;">NOTE:  The Clarity server must be version 15.2 or above.</div>'
         },{
             name: 'ppmHost',
             xtype: 'rallytextfield',
             width: 400,
             labelWidth: 100,
             labelAlign: 'right',
-            fieldLabel: 'PPM Host name',
+            fieldLabel: 'Clarity Host name',
             margin: '10 0 10 0',
             maskRe:  /[a-zA-Z0-9\.\-]/,
             emptyText: 'Please enter a Host name or IP Address...',
