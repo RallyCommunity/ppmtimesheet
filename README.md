@@ -1,13 +1,14 @@
-#PPM Timesheet
+# Clarity Timesheet App
 
-This app presents a PPM timesheet through an iFrame in Rally.  
+This app presents a Clarity timesheet through an iFrame in Rally.  
 
-PPM version must be version 15.2 or above.  
+Clarity version must be version 15.2 or above.  
 
-A PPM host name or IP address and (optionally) HTTPS port must be configured through the app settings.  
+A Clarity host name or IP address and (optionally) HTTPS port must be configured through the app settings.  
+The default HTTPS port is 443.
 This app will not be able to serve a timesheet that is only accessible through HTTP protocol.  
 
-X-Frame Options must also be enabled for the configured PPM server.  
+X-Frame Options must also be enabled for the configured Clarity server.  
 
 ![ScreenShot](/images/ppmtimesheet-app-settings.png)
 
