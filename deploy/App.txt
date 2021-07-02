@@ -3,12 +3,12 @@
 <head>
     <title>PPM Timesheet</title>
     <!--  (c) 2016 CA Technologies.  All Rights Reserved. -->
-    <!--  Build Date: Tue Apr 27 2021 11:51:28 GMT-0600 (Mountain Daylight Time) -->
+    <!--  Build Date: Fri Jul 02 2021 08:54:49 GMT-0600 (Mountain Daylight Time) -->
     
     <script type="text/javascript">
-        var APP_BUILD_DATE = "Tue Apr 27 2021 11:51:28 GMT-0600 (Mountain Daylight Time)";
+        var APP_BUILD_DATE = "Fri Jul 02 2021 08:54:49 GMT-0600 (Mountain Daylight Time)";
         var BUILDER = "kc683795";
-        var CHECKSUM = 2884512340;
+        var CHECKSUM = 3083753201;
     </script>
     
     <script type="text/javascript" src="/apps/x/sdk.js"></script>
@@ -211,16 +211,18 @@ Ext.define('Rally.apps.ppmtimesheet.PPMTimesheetApp', {
 
     mixins: ['Rally.clientmetrics.ClientMetricsRecordable'],
 
-    appName: 'Clarity Timesheet Frame',
+    appName: 'PPM Timesheet App v2',
 
     config: {
         defaultSettings: {
             ppmHost: null,
-            ppmPort: 443
+            ppmPort: 443,
+            relativePath: null
         }
     },
     autoScroll: false,
-    timesheetSuffix:  '/pm/integration.html#',
+    timesheetSuffix:  '/pm/integration.html#', //'/pm/#/timesheets',
+    loggedInMessage:  "Connection to the Clarity timesheet has been launched in a separate tab.<br/><br/>Your browser pop-up blocker may interfere with this process.<br/><br/><a href=\"{0}\" target=\"clarityWindow\">Click here to access or re-launch Clarity.</a><br/><br/>If you will be accessing the Clarity timesheet regularly, you may wish to always allow popus from this site.",
 //https://knowledge.broadcom.com/external/article?articleId=206489
     launch: function() {
 
@@ -228,92 +230,68 @@ Ext.define('Rally.apps.ppmtimesheet.PPMTimesheetApp', {
             port = this.getPPMPort();
 
          this.validateConfig(server, port).then({
-                success: this.addFrame,
+                success: this.addLauncher,
                 failure: this.showAppMessage,
                 scope: this
         });
     },
-    addFrame: function(){
-        this.logger.log('addFrame', this.getHeight());
+    addLauncher: function(){
         var server = this.getPPMHost(),
-            port = this.getPPMPort(),
-            url = this.buildPPMTimesheetURL(server, port),
-            height = this.getHeight() || 600;
+        port = this.getPPMPort(),
+        relativePath = this.getPPMRelativePath(),
+        url = this.buildPPMTimesheetURL(server, port, relativePath),
+        height = this.getHeight() || 600;
+        this.logger.log("addLauncher",url);
 
-        try {
-
-            // this.add({
-            //     xtype: 'container',
-            //     html: '<div class="secondary-message" style="font-family: ProximaNova,Helvetica,Arial;text-align:center;color:#8a8a8a;font-size:10pt;font-style:italic">Login to Clarity through Rally is recommended only when using a private computer'
-            // });
-
-            var iframe = this.add({
-                xtype: 'component',
-                itemId: 'ppmIframe',
-                autoEl: {
-                    tag: 'iframe',
-                    style: 'height: ' + height + 'px; width: 100%; border: none; resize:both',
-                    src: url
-                }
-            });
-
-
-            var me = this;
-            iframe.getEl().dom.onload = function(e){
-                me.logger.log('iframe loaded', e, iframe.getEl().dom);
-            };
-        }
-        catch(e){
-            Rally.ui.notify.Notifier.showError({message: Ext.String.format("Error loading {0} into iFrame.",url)});
-        }
-
+        var msg = Ext.String.format(this.loggedInMessage, url, server);
+        this.add({
+            xtype: 'container',
+            html: '<div class="secondary-message" style="font-family: ProximaNova,Helvetica,Arial;text-align:center;color:#8a8a8a;font-size:12pt;font-style:italic">' + msg
+        });
+        
+        this.launchWindow(url);
     },
+    launchWindow: function(url){
+        if (!this.currentWindow || this.currentWindow.closed === true){
+            this.currentWindow = window.open(url,'clarityWindow') //,'toolbar=0,location=0,directories=0,status=0,menubar=0,scrollbars=1,resizable=0,width=700,height=600');
+        } else {
+            this.currentWindow.focus();
+        }
+    },
+
     validateConfig: function(server, port){
         var deferred = Ext.create('Deft.Deferred');
 
         if (!server){
             deferred.reject("No Clarity Server and Port is configured.  Please work with an administrator to configure your Clarity https server.");
         } else {
-            //Commented this out due to the chrome issue, as this fails on it.
-            //var httpRequest = new XMLHttpRequest(),
-            //    suffix = '/ppm/rest/v1/private/userContext',
-            //url = this.buildPPMTimesheetURL(server, port);
-            //
-            //url = url.replace(this.timesheetSuffix, suffix);
-            //
-            //httpRequest.withCredentials = true;
-            //httpRequest.cors = true;
-            //httpRequest.onreadystatechange = function() {
-            //    console.log('ready', httpRequest.readyState, httpRequest.status);
-            //    if (httpRequest.readyState === 4) {
-            //        console.log('readystate', httpRequest);
-            //        if (httpRequest.status !== 200) {
-            //            console.log('Failed', httpRequest.status);
-            //            var msg = Ext.String.format('The PPM Server and Port provided is not responding as expected.  Please verify the configuration in the App Settings.');
-            //            deferred.reject(msg);
-            //        } else {
-                        deferred.resolve();
-            //        }
-            //    }
-            //};
-            //httpRequest.open('GET', url);
-            //httpRequest.send();
+            deferred.resolve();
         }
 
         return deferred;
     },
-    buildPPMTimesheetURL: function(server, port){
+    buildPPMTimesheetURL: function(server, port, relativePath){
         var url = Ext.String.format("https://{0}",server);
         if (port){
             url = Ext.String.format("{0}:{1}", url, port);
         }
-        return url + this.timesheetSuffix;
+        if( relativePath ) {
+            if( !url.endsWith("/") && !relativePath.startsWith("/") ) {
+                url = url + "/";
+            } 
+            return url + relativePath;
+        } else {
+            return url + this.timesheetSuffix;        	
+        }
     },
     getPPMHost: function(){
         return this.getSetting('ppmHost') || null;
     },
     getPPMPort: function(){
         return this.getSetting('ppmPort') || null;
+    },
+    getPPMRelativePath: function(){
+        return this.getSetting('ppmRelativePathWithParams') || null;
     },
     showAppMessage: function(msg){
         this.removeAll();
@@ -330,10 +308,10 @@ Ext.define('Rally.apps.ppmtimesheet.PPMTimesheetApp', {
         },{
             name: 'ppmHost',
             xtype: 'rallytextfield',
-            width: 400,
-            labelWidth: 100,
+            width: 600,
+            labelWidth: 225,
             labelAlign: 'right',
-            fieldLabel: 'Clarity Host name',
+            fieldLabel: 'Clarity Host name<br/><em>(for SSO the IdP URL)</em>',
             margin: '10 0 10 0',
             maskRe:  /[a-zA-Z0-9\.\-]/,
             emptyText: 'Please enter a Host name or IP Address...',
@@ -343,13 +321,25 @@ Ext.define('Rally.apps.ppmtimesheet.PPMTimesheetApp', {
             xtype:'rallynumberfield',
             labelAlign: 'right',
             fieldLabel: 'Port (HTTPS)',
-            labelWidth: 100,
+            labelWidth: 225,
             emptyText: 443,
             minValue: 0,
             maxValue: 65535,
             allowBlank: true,
             allowDecimals: false,
             allowExponential: false
+        },{
+            name: 'ppmRelativePathWithParams',
+            xtype: 'rallytextfield',
+            width: 600,
+            labelWidth: 225,
+            labelAlign: 'right',
+            fieldLabel: 'Clarity Host Relative Path<br/><em>(for SSO only)</em>',
+            margin: '10 0 10 0',
+            //maskRe:  /[a-zA-Z0-9\.\-]/,
+            //emptyText: 'In SSO environment, enter relative path with any parameters of IdP initiated SSO PPM URL here and enter host address above ...',
+            emptyText: 'In SSO environment, enter relative path with any parameters of IdP URL here...',
+            maxLength: 500
         }];
     }
 });
@@ -382,6 +372,11 @@ Ext.define('Rally.apps.ppmtimesheet.PPMTimesheetApp', {
 
 .noScrolling {
     overflow: hidden;
+}
+
+.subtext {
+    color:dimgrey;
+    font-style: italic;
 }
     </style>
 

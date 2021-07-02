@@ -19,3 +19,8 @@
 .noScrolling {
     overflow: hidden;
 }
+
+.subtext {
+    color:dimgrey;
+    font-style: italic;
+}
